@@ -97,16 +97,36 @@ const I18nContext = createContext<I18nContextType>({
   t: translations.zh,
 });
 
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  // Default to English for first-time visitors.
-  const [locale, setLocale] = useState<Locale>('zh');
+  // 页面加载先读取浏览器保存的语言，没有就默认中文
+  const [locale, setLocale] = useState<Locale>(() => {
+    // 判断是否在浏览器环境
+    if (typeof window !== 'undefined') {
+      // 读取保存的语言
+      const savedLang = localStorage.getItem('app_language') as Locale;
+      // 如果存过 zh/en 就用上次的语言
+      if (savedLang === 'zh' || savedLang === 'en') {
+        return savedLang;
+      }
+    }
+    // 第一次打开、无记录，强制中文
+    return 'zh';
+  });
+  // 切换语言时，自动保存到浏览器
+  const changeLocale = (l: Locale) => {
+    setLocale(l);
+    localStorage.setItem('app_language', l);
+  };
   const t = translations[locale];
   return (
-    <I18nContext.Provider value={{ locale, setLocale, t }}>
+    <I18nContext.Provider value={{ locale, setLocale: changeLocale, t }}>
       {children}
     </I18nContext.Provider>
   );
 }
+
+
 
 export function useI18n() {
   return useContext(I18nContext);
